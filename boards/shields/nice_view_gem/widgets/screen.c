@@ -39,8 +39,8 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     draw_output_status(canvas, state);
     draw_battery_status(canvas, state);
 
-    // Rotate for horizontal display
-    rotate_canvas(canvas, cbuf);
+    // Rotate for horizontal display (90 degrees = 900 tenths)
+    rotate_canvas(canvas, 900);
 }
 
 static void draw_middle(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
@@ -51,7 +51,7 @@ static void draw_middle(lv_obj_t *widget, lv_color_t cbuf[], const struct status
     draw_wpm_status(canvas, state);
 
     // Rotate for horizontal display
-    rotate_canvas(canvas, cbuf);
+    rotate_canvas(canvas, 900);
 }
 
 static void draw_bottom(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
@@ -63,7 +63,7 @@ static void draw_bottom(lv_obj_t *widget, lv_color_t cbuf[], const struct status
     draw_layer_status(canvas, state);
 
     // Rotate for horizontal display
-    rotate_canvas(canvas, cbuf);
+    rotate_canvas(canvas, 900);
 }
 
 /**
