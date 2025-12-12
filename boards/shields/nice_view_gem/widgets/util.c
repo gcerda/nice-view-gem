@@ -1,3 +1,5 @@
+
+#include <lvgl.h>
 #include <zephyr/kernel.h>
 #include "util.h"
 #include <ctype.h>
@@ -8,29 +10,18 @@ void to_uppercase(char *str) {
     }
 }
 
-void rotate_canvas(lv_obj_t *canvas, lv_color_t cbuf[]) {
-    static lv_color_t cbuf_tmp[BUFFER_SIZE * BUFFER_SIZE];
-    memcpy(cbuf_tmp, cbuf, sizeof(cbuf_tmp));
-
-    lv_image_dsc_t img;
-    img.data = (void *)cbuf_tmp;
-    img.header.magic = LV_IMAGE_HEADER_MAGIC;
-    img.header.cf = LV_COLOR_FORMAT_NATIVE;
-    img.header.w = BUFFER_SIZE;
-    img.header.h = BUFFER_SIZE;
-    img.header.stride = BUFFER_SIZE * sizeof(lv_color_t);
-    img.data_size = sizeof(cbuf_tmp);
-
-    lv_canvas_fill_bg(canvas, LVGL_BACKGROUND, LV_OPA_COVER);
-    lv_canvas_transform(canvas, &img, 900, 256, -1, 0, BUFFER_SIZE / 2,
-                        BUFFER_SIZE / 2, false);
+// LVGL 9: rotate_canvas is deprecated, use lv_obj_set_style_transform_angle or lv_image_set_rotation on image objects
+void rotate_canvas(lv_obj_t *obj, int16_t angle_tenths) {
+    // angle_tenths: 900 means 90.0 degrees
+    // LVGL 9 expects angle in 0.1 degree units
+    lv_obj_set_style_transform_angle(obj, angle_tenths, 0);
 }
 
-void fill_background(lv_obj_t *canvas) {
-    lv_draw_rect_dsc_t rect_black_dsc;
-    init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
-
-    lv_canvas_draw_rect(canvas, 0, 0, BUFFER_SIZE, BUFFER_SIZE, &rect_black_dsc);
+void fill_background(lv_obj_t *obj) {
+    // Set background color using style
+    lv_obj_set_style_bg_color(obj, LVGL_BACKGROUND, 0);
+    lv_obj_set_style_border_width(obj, 0, 0);
+    lv_obj_set_style_radius(obj, 0, 0);
 }
 
 void init_label_dsc(lv_draw_label_dsc_t *label_dsc, lv_color_t color, const lv_font_t *font,

@@ -1,40 +1,52 @@
+
+#include <lvgl.h>
 #include <zephyr/kernel.h>
 #include "battery.h"
 #include "../assets/custom_fonts.h"
 
 LV_IMAGE_DECLARE(bolt);
 
-static void draw_level(lv_obj_t *canvas, const struct status_state *state) {
-    lv_draw_label_dsc_t label_right_dsc;
-    init_label_dsc(&label_right_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_RIGHT);
 
+static void draw_level(lv_obj_t *parent, const struct status_state *state) {
+    // Battery percentage label (right-aligned)
+    lv_obj_t *label = lv_label_create(parent);
     char text[10] = {};
-
     sprintf(text, "%i%%", state->battery);
-    lv_canvas_draw_text(canvas, 26, 19, 42, &label_right_dsc, text);
+    lv_label_set_text(label, text);
+    lv_obj_set_pos(label, 26, 19);
+    lv_obj_set_style_text_color(label, lv_color_black(), 0);
+    lv_obj_set_style_text_font(label, &pixel_operator_mono, 0);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_RIGHT, 0);
 }
 
-static void draw_charging_level(lv_obj_t *canvas, const struct status_state *state) {
-    lv_draw_img_dsc_t img_dsc;
-    lv_draw_img_dsc_init(&img_dsc);
-    lv_draw_label_dsc_t label_right_dsc;
-    init_label_dsc(&label_right_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_RIGHT);
-
+static void draw_charging_level(lv_obj_t *parent, const struct status_state *state) {
+    // Battery percentage label (right-aligned)
+    lv_obj_t *label = lv_label_create(parent);
     char text[10] = {};
-
     sprintf(text, "%i%%", state->battery);
-    lv_canvas_draw_text(canvas, 26, 19, 35, &label_right_dsc, text);
-    lv_canvas_draw_img(canvas, 62, 21, &bolt, &img_dsc);
+    lv_label_set_text(label, text);
+    lv_obj_set_pos(label, 26, 19);
+    lv_obj_set_style_text_color(label, lv_color_black(), 0);
+    lv_obj_set_style_text_font(label, &pixel_operator_mono, 0);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_RIGHT, 0);
+    // Charging bolt icon
+    lv_obj_t *img = lv_image_create(parent);
+    lv_image_set_src(img, &bolt);
+    lv_obj_set_pos(img, 62, 21);
 }
 
-void draw_battery_status(lv_obj_t *canvas, const struct status_state *state) {
-    lv_draw_label_dsc_t label_left_dsc;
-    init_label_dsc(&label_left_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_LEFT);
-    lv_canvas_draw_text(canvas, 0, 19, 25, &label_left_dsc, "BAT");
+void draw_battery_status(lv_obj_t *parent, const struct status_state *state) {
+    // "BAT" label (left-aligned)
+    lv_obj_t *label = lv_label_create(parent);
+    lv_label_set_text(label, "BAT");
+    lv_obj_set_pos(label, 0, 19);
+    lv_obj_set_style_text_color(label, lv_color_black(), 0);
+    lv_obj_set_style_text_font(label, &pixel_operator_mono, 0);
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
 
     if (state->charging) {
-        draw_charging_level(canvas, state);
+        draw_charging_level(parent, state);
     } else {
-        draw_level(canvas, state);
+        draw_level(parent, state);
     }
 }

@@ -1,3 +1,5 @@
+
+#include <lvgl.h>
 #include <math.h>
 #include <zephyr/kernel.h>
 #include "wpm.h"
@@ -6,11 +8,11 @@
 LV_IMAGE_DECLARE(gauge);
 LV_IMAGE_DECLARE(grid);
 
-static void draw_gauge(lv_obj_t *canvas, const struct status_state *state) {
-    lv_draw_img_dsc_t img_dsc;
-    lv_draw_img_dsc_init(&img_dsc);
 
-    lv_canvas_draw_img(canvas, 16, 44 + BUFFER_OFFSET_MIDDLE, &gauge, &img_dsc);
+static void draw_gauge(lv_obj_t *parent, const struct status_state *state) {
+    lv_obj_t *img = lv_image_create(parent);
+    lv_image_set_src(img, &gauge);
+    lv_obj_set_pos(img, 16, 44 + BUFFER_OFFSET_MIDDLE);
 }
 
 static void draw_needle(lv_obj_t *canvas, const struct status_state *state) {
@@ -52,11 +54,11 @@ static void draw_needle(lv_obj_t *canvas, const struct status_state *state) {
     lv_canvas_draw_line(canvas, points, 2, &line_dsc);
 }
 
-static void draw_grid(lv_obj_t *canvas) {
-    lv_draw_img_dsc_t img_dsc;
-    lv_draw_img_dsc_init(&img_dsc);
 
-    lv_canvas_draw_img(canvas, 0, 65 + BUFFER_OFFSET_MIDDLE, &grid, &img_dsc);
+static void draw_grid(lv_obj_t *parent) {
+    lv_obj_t *img = lv_image_create(parent);
+    lv_image_set_src(img, &grid);
+    lv_obj_set_pos(img, 0, 65 + BUFFER_OFFSET_MIDDLE);
 }
 
 static void draw_graph(lv_obj_t *canvas, const struct status_state *state) {
@@ -108,24 +110,31 @@ static void draw_graph(lv_obj_t *canvas, const struct status_state *state) {
     lv_canvas_draw_line(canvas, points, 10, &line_dsc);
 }
 
-static void draw_label(lv_obj_t *canvas, const struct status_state *state) {
-    lv_draw_label_dsc_t label_left_dsc;
-    init_label_dsc(&label_left_dsc, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_LEFT);
-    lv_canvas_draw_text(canvas, 0, 101 + BUFFER_OFFSET_MIDDLE, 25, &label_left_dsc, "WPM");
 
-    lv_draw_label_dsc_t label_dsc_wpm;
-    init_label_dsc(&label_dsc_wpm, LVGL_FOREGROUND, &pixel_operator_mono, LV_TEXT_ALIGN_RIGHT);
+static void draw_label(lv_obj_t *parent, const struct status_state *state) {
+    // "WPM" label (left-aligned)
+    lv_obj_t *label_left = lv_label_create(parent);
+    lv_label_set_text(label_left, "WPM");
+    lv_obj_set_pos(label_left, 0, 101 + BUFFER_OFFSET_MIDDLE);
+    lv_obj_set_style_text_color(label_left, lv_color_black(), 0);
+    lv_obj_set_style_text_font(label_left, &pixel_operator_mono, 0);
+    lv_obj_set_style_text_align(label_left, LV_TEXT_ALIGN_LEFT, 0);
 
+    // WPM value label (right-aligned)
+    lv_obj_t *label_right = lv_label_create(parent);
     char wpm_text[6] = {};
-
     snprintf(wpm_text, sizeof(wpm_text), "%d", state->wpm[9]);
-    lv_canvas_draw_text(canvas, 26, 101 + BUFFER_OFFSET_MIDDLE, 42, &label_dsc_wpm, wpm_text);
+    lv_label_set_text(label_right, wpm_text);
+    lv_obj_set_pos(label_right, 26, 101 + BUFFER_OFFSET_MIDDLE);
+    lv_obj_set_style_text_color(label_right, lv_color_black(), 0);
+    lv_obj_set_style_text_font(label_right, &pixel_operator_mono, 0);
+    lv_obj_set_style_text_align(label_right, LV_TEXT_ALIGN_RIGHT, 0);
 }
 
-void draw_wpm_status(lv_obj_t *canvas, const struct status_state *state) {
-    draw_gauge(canvas, state);
-    draw_needle(canvas, state);
-    draw_grid(canvas);
-    draw_graph(canvas, state);
-    draw_label(canvas, state);
+void draw_wpm_status(lv_obj_t *parent, const struct status_state *state) {
+    draw_gauge(parent, state);
+    draw_needle(parent, state);
+    draw_grid(parent);
+    draw_graph(parent, state);
+    draw_label(parent, state);
 }
