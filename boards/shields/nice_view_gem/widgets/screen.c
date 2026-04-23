@@ -263,16 +263,16 @@ static void format_key_text(char *out, size_t out_size, uint16_t usage_page, uin
         case HID_USAGE_KEY_KEYBOARD_RIGHT_GUI:
             snprintf(out, out_size, "GUI");
             return;
-        case HID_USAGE_KEY_KEYBOARD_LEFT_ARROW:
+        case HID_USAGE_KEY_KEYBOARD_LEFTARROW:
             snprintf(out, out_size, "LEFT");
             return;
-        case HID_USAGE_KEY_KEYBOARD_RIGHT_ARROW:
+        case HID_USAGE_KEY_KEYBOARD_RIGHTARROW:
             snprintf(out, out_size, "RGHT");
             return;
-        case HID_USAGE_KEY_KEYBOARD_UP_ARROW:
+        case HID_USAGE_KEY_KEYBOARD_UPARROW:
             snprintf(out, out_size, "UP");
             return;
-        case HID_USAGE_KEY_KEYBOARD_DOWN_ARROW:
+        case HID_USAGE_KEY_KEYBOARD_DOWNARROW:
             snprintf(out, out_size, "DOWN");
             return;
         default:
