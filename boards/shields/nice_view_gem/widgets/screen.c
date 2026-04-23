@@ -1,4 +1,5 @@
 #include <zephyr/kernel.h>
+#include <stdio.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -7,6 +8,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/events/battery_state_changed.h>
 #include <zmk/events/ble_active_profile_changed.h>
 #include <zmk/events/endpoint_changed.h>
+#include <zmk/events/keycode_state_changed.h>
 #include <zmk/events/layer_state_changed.h>
 #include <zmk/events/usb_conn_state_changed.h>
 #include <zmk/events/wpm_state_changed.h>
@@ -19,6 +21,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/wpm.h>
 
 #include "battery.h"
+#include "key.h"
 #include "layer.h"
 #include "output.h"
 #include "profile.h"
@@ -38,6 +41,7 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
     // Draw widgets
     draw_output_status(canvas, state);
     draw_battery_status(canvas, state);
+    draw_key_status(canvas, state);
 
     // Rotate for horizontal display (90 degrees = 900 tenths)
     rotate_canvas(canvas, 900);
@@ -197,6 +201,141 @@ ZMK_DISPLAY_WIDGET_LISTENER(widget_wpm_status, struct wpm_status_state, wpm_stat
 ZMK_SUBSCRIPTION(widget_wpm_status, zmk_wpm_state_changed);
 
 /**
+ * Key status
+ **/
+
+static void format_key_text(char *out, size_t out_size, uint16_t usage_page, uint32_t keycode,
+                            bool pressed) {
+    if (!pressed) {
+        snprintf(out, out_size, "--");
+        return;
+    }
+
+    if (usage_page == HID_USAGE_KEY) {
+        if (keycode >= HID_USAGE_KEY_KEYBOARD_A && keycode <= HID_USAGE_KEY_KEYBOARD_Z) {
+            snprintf(out, out_size, "%c", 'A' + (keycode - HID_USAGE_KEY_KEYBOARD_A));
+            return;
+        }
+
+        if (keycode >= HID_USAGE_KEY_KEYBOARD_1_AND_EXCLAMATION &&
+            keycode <= HID_USAGE_KEY_KEYBOARD_9_AND_LEFT_PARENTHESIS) {
+            snprintf(out, out_size, "%c",
+                     '1' + (char)(keycode - HID_USAGE_KEY_KEYBOARD_1_AND_EXCLAMATION));
+            return;
+        }
+
+        if (keycode == HID_USAGE_KEY_KEYBOARD_0_AND_RIGHT_PARENTHESIS) {
+            snprintf(out, out_size, "0");
+            return;
+        }
+
+        switch (keycode) {
+        case HID_USAGE_KEY_KEYBOARD_RETURN_ENTER:
+            snprintf(out, out_size, "ENTER");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_ESCAPE:
+            snprintf(out, out_size, "ESC");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_DELETE_BACKSPACE:
+            snprintf(out, out_size, "BKSP");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_TAB:
+            snprintf(out, out_size, "TAB");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_SPACEBAR:
+            snprintf(out, out_size, "SPACE");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_LEFTSHIFT:
+        case HID_USAGE_KEY_KEYBOARD_RIGHTSHIFT:
+            snprintf(out, out_size, "SHIFT");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_LEFTCONTROL:
+        case HID_USAGE_KEY_KEYBOARD_RIGHTCONTROL:
+            snprintf(out, out_size, "CTRL");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_LEFTALT:
+        case HID_USAGE_KEY_KEYBOARD_RIGHTALT:
+            snprintf(out, out_size, "ALT");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_LEFT_GUI:
+        case HID_USAGE_KEY_KEYBOARD_RIGHT_GUI:
+            snprintf(out, out_size, "GUI");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_LEFT_ARROW:
+            snprintf(out, out_size, "LEFT");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_RIGHT_ARROW:
+            snprintf(out, out_size, "RGHT");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_UP_ARROW:
+            snprintf(out, out_size, "UP");
+            return;
+        case HID_USAGE_KEY_KEYBOARD_DOWN_ARROW:
+            snprintf(out, out_size, "DOWN");
+            return;
+        default:
+            break;
+        }
+    }
+
+    if (usage_page == HID_USAGE_CONSUMER) {
+        switch (keycode) {
+        case HID_USAGE_CONSUMER_VOLUME_INCREMENT:
+            snprintf(out, out_size, "VOL+");
+            return;
+        case HID_USAGE_CONSUMER_VOLUME_DECREMENT:
+            snprintf(out, out_size, "VOL-");
+            return;
+        case HID_USAGE_CONSUMER_MUTE:
+            snprintf(out, out_size, "MUTE");
+            return;
+        case HID_USAGE_CONSUMER_PLAY:
+        case HID_USAGE_CONSUMER_PLAY_PAUSE:
+            snprintf(out, out_size, "PLAY");
+            return;
+        case HID_USAGE_CONSUMER_STOP:
+            snprintf(out, out_size, "STOP");
+            return;
+        case HID_USAGE_CONSUMER_SCAN_NEXT_TRACK:
+            snprintf(out, out_size, "NEXT");
+            return;
+        case HID_USAGE_CONSUMER_SCAN_PREVIOUS_TRACK:
+            snprintf(out, out_size, "PREV");
+            return;
+        default:
+            break;
+        }
+    }
+
+    snprintf(out, out_size, "0x%X", (unsigned int)keycode);
+}
+
+static void set_key_status(struct zmk_widget_screen *widget, uint16_t usage_page, uint32_t keycode,
+                           bool pressed) {
+    format_key_text(widget->state.key_text, sizeof(widget->state.key_text), usage_page, keycode,
+                    pressed);
+    draw_top(widget->obj, widget->cbuf, &widget->state);
+}
+
+static int key_status_listener(const zmk_event_t *eh) {
+    const struct zmk_keycode_state_changed *ev = as_zmk_keycode_state_changed(eh);
+
+    if (ev == NULL) {
+        return ZMK_EV_EVENT_BUBBLE;
+    }
+
+    struct zmk_widget_screen *widget;
+    SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
+        set_key_status(widget, ev->usage_page, ev->keycode, ev->state);
+    }
+
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
+ZMK_LISTENER(widget_key_status, key_status_listener);
+ZMK_SUBSCRIPTION(widget_key_status, zmk_keycode_state_changed);
+
+/**
  * Initialization
  **/
 
@@ -216,6 +355,7 @@ int zmk_widget_screen_init(struct zmk_widget_screen *widget, lv_obj_t *parent) {
     lv_obj_align(bottom, LV_ALIGN_TOP_RIGHT, BUFFER_OFFSET_BOTTOM, 0);
     lv_canvas_set_buffer(bottom, widget->cbuf3, BUFFER_SIZE, BUFFER_SIZE, LV_COLOR_FORMAT_NATIVE);
 
+    snprintf(widget->state.key_text, sizeof(widget->state.key_text), "--");
     sys_slist_append(&widgets, &widget->node);
     widget_battery_status_init();
     widget_layer_status_init();

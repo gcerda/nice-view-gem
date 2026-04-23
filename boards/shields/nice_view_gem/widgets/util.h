@@ -26,6 +26,7 @@ struct status_state {
     uint8_t layer_index;
     const char *layer_label;
     uint8_t wpm[10];
+    char key_text[16];
 #else
     bool connected;
 #endif
