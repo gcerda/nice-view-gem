@@ -206,6 +206,12 @@ ZMK_SUBSCRIPTION(widget_wpm_status, zmk_wpm_state_changed);
  * Key status
  **/
 
+struct key_status_state {
+    uint16_t usage_page;
+    uint32_t keycode;
+    bool pressed;
+};
+
 static void format_key_text(char *out, size_t out_size, uint16_t usage_page, uint32_t keycode,
                             bool pressed) {
     if (!pressed) {
@@ -312,29 +318,41 @@ static void format_key_text(char *out, size_t out_size, uint16_t usage_page, uin
     snprintf(out, out_size, "0x%X", (unsigned int)keycode);
 }
 
-static void set_key_status(struct zmk_widget_screen *widget, uint16_t usage_page, uint32_t keycode,
-                           bool pressed) {
-    format_key_text(widget->state.key_text, sizeof(widget->state.key_text), usage_page, keycode,
-                    pressed);
+static void set_key_status(struct zmk_widget_screen *widget, struct key_status_state state) {
+    format_key_text(widget->state.key_text, sizeof(widget->state.key_text), state.usage_page,
+                    state.keycode, state.pressed);
     draw_top(widget->obj, widget->cbuf, &widget->state);
 }
 
-static int key_status_listener(const zmk_event_t *eh) {
+static void key_status_update_cb(struct key_status_state state) {
+    struct zmk_widget_screen *widget;
+    SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) { set_key_status(widget, state); }
+}
+
+static struct key_status_state key_status_get_state(const zmk_event_t *eh) {
+    static struct key_status_state state = {.usage_page = HID_USAGE_KEY, .keycode = 0, .pressed = false};
     const struct zmk_keycode_state_changed *ev = as_zmk_keycode_state_changed(eh);
 
     if (ev == NULL) {
-        return ZMK_EV_EVENT_BUBBLE;
+        return state;
     }
 
-    struct zmk_widget_screen *widget;
-    SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
-        set_key_status(widget, ev->usage_page, ev->keycode, ev->state);
+    if (ev->state) {
+        state.usage_page = ev->usage_page;
+        state.keycode = ev->keycode;
+        state.pressed = true;
+        return state;
     }
 
-    return ZMK_EV_EVENT_BUBBLE;
+    if (state.pressed && state.usage_page == ev->usage_page && state.keycode == ev->keycode) {
+        state.pressed = false;
+    }
+
+    return state;
 }
 
-ZMK_LISTENER(widget_key_status, key_status_listener);
+ZMK_DISPLAY_WIDGET_LISTENER(widget_key_status, struct key_status_state, key_status_update_cb,
+                            key_status_get_state)
 ZMK_SUBSCRIPTION(widget_key_status, zmk_keycode_state_changed);
 
 /**
