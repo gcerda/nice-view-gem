@@ -42,3 +42,12 @@ void init_line_dsc(lv_draw_line_dsc_t *line_dsc, lv_color_t color, uint8_t width
     line_dsc->color = color;
     line_dsc->width = width;
 }
+
+void draw_line_on_canvas(lv_obj_t *canvas, const lv_point_t points[], uint32_t point_cnt,
+                         lv_draw_line_dsc_t *line_dsc) {
+    lv_layer_t layer;
+
+    lv_canvas_init_layer(canvas, &layer);
+    lv_draw_line(&layer, line_dsc, points);
+    lv_canvas_finish_layer(canvas, &layer);
+}

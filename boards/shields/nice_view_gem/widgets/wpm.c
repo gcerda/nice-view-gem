@@ -51,7 +51,7 @@ static void draw_needle(lv_obj_t *canvas, const struct status_state *state) {
     int needleEndY = centerY + (int)(radius * sin(angleRad));
 
     lv_point_t points[2] = {{needleStartX, needleStartY}, {needleEndX, needleEndY}};
-    lv_canvas_draw_line(canvas, points, 2, &line_dsc);
+    draw_line_on_canvas(canvas, points, 2, &line_dsc);
 }
 
 
@@ -107,7 +107,7 @@ static void draw_graph(lv_obj_t *canvas, const struct status_state *state) {
     }
 #endif
 
-    lv_canvas_draw_line(canvas, points, 10, &line_dsc);
+    draw_line_on_canvas(canvas, points, 10, &line_dsc);
 }
 
 
