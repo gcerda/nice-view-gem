@@ -48,6 +48,16 @@ void draw_line_on_canvas(lv_obj_t *canvas, const lv_point_t points[], uint32_t p
     lv_layer_t layer;
 
     lv_canvas_init_layer(canvas, &layer);
-    lv_draw_line(&layer, line_dsc, points);
+
+    if (point_cnt >= 2) {
+        for (uint32_t i = 0; i < point_cnt - 1; i++) {
+            line_dsc->p1.x = points[i].x;
+            line_dsc->p1.y = points[i].y;
+            line_dsc->p2.x = points[i + 1].x;
+            line_dsc->p2.y = points[i + 1].y;
+            lv_draw_line(&layer, line_dsc);
+        }
+    }
+
     lv_canvas_finish_layer(canvas, &layer);
 }
